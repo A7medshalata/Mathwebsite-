@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Your <span class="hl">test</span></h1>
+  <div id="setup"></div>
+  <div id="quiz"></div>
+</main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'tests.html');
+  const ids = JSON.parse(localStorage.getItem('mh_books') || '[]');
+
+  (async () => {
+    if (!ids.length) {
+      $('#setup').innerHTML = '<div class="empty">You have not chosen any books yet.<br><br><a class="btn" href="/books.html">Choose books</a></div>';
+      return;
+    }
+    let books = [];
+    try { books = (await api('/books')).filter((b) => ids.includes(b.id)); } catch (e) { return showMsg($('#setup'), e.message); }
+    if (!books.length) {
+      $('#setup').innerHTML = '<div class="empty">Your chosen books are no longer available.<br><br><a class="btn" href="/books.html">Choose books</a></div>';
+      return;
+    }
+    $('#setup').innerHTML = `<div class="panel">
+      <p><b>Books:</b> ${books.map((b) => esc(b.title)).join(', ')} · <a href="/books.html">change</a></p>
+      <label class="field" style="max-width:240px">Number of questions
+        <select id="n"><option>5</option><option selected>10</option><option>15</option><option>20</option></select>
+      </label>
+      <div id="msg"></div>
+      <button class="btn" id="start">Start test</button>
+    </div>`;
+    $('#start').onclick = async () => {
+      try {
+        const out = await api('/tests/start', { bookIds: ids, count: Number($('#n').value) });
+        $('#setup').innerHTML = `<p class="lead">${out.questions.length} questions from ${books.map((b) => esc(b.title)).join(', ')}.</p>`;
+        renderQuiz($('#quiz'), out.questions, 'test', () => {
+          $('#setup').innerHTML = '<div class="row"><a class="btn" href="/tests.html">Take another test</a><a class="btn alt" href="/books.html">Change books</a></div>';
+        });
+      } catch (e) { showMsg($('#msg'), e.message); }
+    };
+  })();
+</script>
+</body>
+</html>

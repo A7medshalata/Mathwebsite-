@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create account · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="auth">
+  <section>
+    <div class="big-eq">Join <span class="hl">MathHub</span>
+      <small>After you sign up, your teacher activates your account. Then you can log in and start.</small>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Create a student account</h2>
+    <form id="f" novalidate>
+      <label class="field">Full name <input type="text" name="fullName" autocomplete="name" required maxlength="80"></label>
+      <label class="field">Username <input type="text" name="username" autocomplete="username" required minlength="3" maxlength="30"></label>
+      <label class="field">Password (6+ characters) <input type="password" name="password" autocomplete="new-password" required minlength="6"></label>
+      <label class="field">Repeat password <input type="password" name="password2" autocomplete="new-password" required></label>
+      <div id="msg"></div>
+      <div class="row spread">
+        <button class="btn" type="submit">Create account</button>
+        <a href="/index.html">I already have an account</a>
+      </div>
+    </form>
+  </section>
+</main>
+<script src="/app.js"></script>
+<script>
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    if (fd.get('password') !== fd.get('password2')) return showMsg($('#msg'), 'The two passwords do not match');
+    const btn = e.target.querySelector('button'); btn.disabled = true;
+    try {
+      const out = await api('/register', { fullName: fd.get('fullName'), username: fd.get('username').trim(), password: fd.get('password') });
+      showMsg($('#msg'), out.message, 'ok');
+      e.target.reset();
+    } catch (err) { showMsg($('#msg'), err.message); }
+    btn.disabled = false;
+  };
+</script>
+</body>
+</html>

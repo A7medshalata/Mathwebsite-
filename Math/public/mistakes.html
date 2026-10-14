@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My mistakes · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>My <span class="hl">mistakes</span></h1>
+  <p class="lead">Every question you last got wrong. Answer it correctly and it leaves this list.</p>
+  <div id="msg"></div>
+  <div id="top"></div>
+  <div id="list"></div>
+</main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'mistakes.html');
+  let items = [];
+
+  function show() {
+    if (!items.length) {
+      $('#top').innerHTML = '';
+      $('#list').innerHTML = '<div class="empty">No mistakes right now. Take a test or practise a lesson to find what to improve.<br><br><a class="btn" href="/books.html">Choose books</a></div>';
+      return;
+    }
+    $('#top').innerHTML = `<div class="row spread" style="margin-bottom:18px"><span><b>${items.length}</b> question${items.length > 1 ? 's' : ''} to fix</span><button class="btn" id="retry">Practise these again</button></div>`;
+    $('#retry').onclick = () => {
+      $('#top').innerHTML = '<p><a href="/mistakes.html">← Back to the list</a></p>';
+      renderQuiz($('#list'), items.map((m) => ({ id: m.id, text: m.text, options: m.options })), 'skill');
+    };
+    $('#list').innerHTML = items.map((m) => `
+      <div class="q">
+        <div class="qt">${esc(m.text)}</div>
+        <p class="muted" style="margin-bottom:8px">${esc(m.book)} · <a href="/skills.html?lesson=${m.lesson_id}">${esc(m.lesson)}</a></p>
+        ${m.options.map((o, j) => `<div class="opt ${j === m.correct ? 'right' : j === m.selected ? 'wrong' : ''}">
+          <span>${j === m.correct ? '✓' : j === m.selected ? '✗' : '&nbsp;&nbsp;'}</span> <span>${esc(o)}</span></div>`).join('')}
+        <div class="expl">${esc(m.explanation)}</div>
+      </div>`).join('');
+  }
+
+  api('/mistakes').then((r) => { items = r; show(); }).catch((e) => showMsg($('#msg'), e.message));
+</script>
+</body>
+</html>

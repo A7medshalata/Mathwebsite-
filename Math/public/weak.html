@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weak lessons · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Lessons to <span class="hl">strengthen</span></h1>
+  <p class="lead">A lesson shows up here when you answered at least 2 of its questions and scored under 60%. These feed your Friday checkpoint.</p>
+  <div id="msg"></div>
+  <div id="list"></div>
+</main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'weak.html');
+  api('/weak-lessons').then((rows) => {
+    if (!rows.length) {
+      $('#list').innerHTML = '<div class="empty">No weak lessons yet. Answer more questions in tests and homework skills so we can find them.<br><br><a class="btn" href="/skills.html">Practise a lesson</a></div>';
+      return;
+    }
+    $('#list').innerHTML = `<div class="tablewrap"><table>
+      <thead><tr><th>Lesson</th><th>Book</th><th>Correct</th><th>Accuracy</th><th></th></tr></thead>
+      <tbody>${rows.map((r) => `<tr>
+        <td><b>${esc(r.title)}</b></td><td>${esc(r.book)}</td>
+        <td>${r.correct}/${r.attempts}</td>
+        <td style="min-width:140px">${barHtml(r.accuracy)} <span class="muted">${r.accuracy}%</span></td>
+        <td><a class="btn small" href="/skills.html?lesson=${r.id}">Review &amp; practise</a></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }).catch((e) => showMsg($('#msg'), e.message));
+</script>
+</body>
+</html>

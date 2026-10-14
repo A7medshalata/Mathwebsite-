@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly checkpoint · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Weekly <span class="hl">checkpoint</span></h1>
+  <p class="lead">Every Friday you get one test built from the lessons you find hardest.</p>
+  <div id="msg"></div>
+  <div id="status"></div>
+  <div id="quiz"></div>
+  <div id="history"></div>
+</main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'checkpoint.html');
+
+  async function load() {
+    const s = await api('/checkpoint/status');
+    let box;
+    if (s.done) {
+      box = `<div class="panel"><h2>Done for this week</h2>
+        <p>You scored <b>${s.done.score}/${s.done.total}</b>. The next checkpoint opens next Friday.</p>
+        <a class="btn alt" href="/weak.html">See weak lessons</a></div>`;
+    } else if (!s.isFriday) {
+      box = `<div class="panel"><h2>Opens on Friday</h2>
+        <p>Today is ${esc(s.weekday)}. Keep practising: you have <b>${s.weakCount}</b> weak lesson${s.weakCount === 1 ? '' : 's'} right now.</p>
+        <a class="btn" href="/skills.html">Practise a lesson</a></div>`;
+    } else if (!s.weakCount) {
+      box = `<div class="panel"><h2>Checkpoint is open</h2>
+        <p>You have no weak lessons yet, so there is nothing to test. Take a test or practise a skill, then come back.</p>
+        <a class="btn" href="/books.html">Choose books</a></div>`;
+    } else {
+      box = `<div class="panel"><h2>Checkpoint is open</h2>
+        <p>It covers your <b>${s.weakCount}</b> weak lesson${s.weakCount === 1 ? '' : 's'}. You can take it once this week.</p>
+        <button class="btn" id="start">Start checkpoint</button></div>`;
+    }
+    $('#status').innerHTML = box;
+    if ($('#start')) $('#start').onclick = start;
+
+    $('#history').innerHTML = s.history.length ? `<h2 style="margin-top:32px">Past checkpoints</h2>
+      <div class="tablewrap"><table><thead><tr><th>Week starting</th><th>Score</th></tr></thead>
+      <tbody>${s.history.map((h) => `<tr><td>${esc(h.week_key)}</td><td>${h.score}/${h.total} (${Math.round(100 * h.score / h.total)}%)</td></tr>`).join('')}</tbody></table></div>` : '';
+  }
+
+  async function start() {
+    try {
+      const out = await api('/checkpoint/start', {});
+      $('#status').innerHTML = `<div class="msg info">Lessons covered: ${out.weakLessons.map((w) => esc(w.title)).join(', ')}</div>`;
+      renderQuiz($('#quiz'), out.questions, 'checkpoint', () => { $('#status').innerHTML = ''; load(); });
+    } catch (e) { showMsg($('#msg'), e.message); }
+  }
+
+  load().catch((e) => showMsg($('#msg'), e.message));
+</script>
+</body>
+</html>

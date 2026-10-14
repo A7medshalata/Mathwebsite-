@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="auth">
+  <section>
+    <div class="big-eq">x = <span class="hl">?</span>
+      <small>Practise from your books, learn from your mistakes, and get a fresh checkpoint every Friday on the lessons you find hardest.</small>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Log in</h2>
+    <form id="f" novalidate>
+      <label class="field">Username <input type="text" name="username" autocomplete="username" required></label>
+      <label class="field">Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <div id="msg"></div>
+      <div class="row spread">
+        <button class="btn" type="submit">Log in</button>
+        <a href="/register.html">Create a student account</a>
+      </div>
+    </form>
+  </section>
+</main>
+<script src="/app.js"></script>
+<script>
+  const u = Auth.user();
+  if (Auth.token() && u) location.href = u.role === 'teacher' ? '/teacher.html' : '/books.html';
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const btn = e.target.querySelector('button'); btn.disabled = true;
+    try {
+      const out = await api('/login', { username: fd.get('username').trim(), password: fd.get('password') });
+      Auth.save(out.token, out.user);
+      location.href = out.user.role === 'teacher' ? '/teacher.html' : '/books.html';
+    } catch (err) { showMsg($('#msg'), err.message); btn.disabled = false; }
+  };
+</script>
+</body>
+</html>

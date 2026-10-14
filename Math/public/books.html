@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Books · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Pick your <span class="hl">books</span></h1>
+  <p class="lead">Tick one or more books. Your test will use questions from the books you choose.</p>
+  <div id="msg"></div>
+  <div class="grid" id="books" role="group" aria-label="Books"></div>
+  <div class="stickybar">
+    <span id="count">No books selected</span>
+    <button class="btn" id="go" disabled>Take a test from these books</button>
+  </div>
+</main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'books.html');
+  let sel = new Set(JSON.parse(localStorage.getItem('mh_books') || '[]'));
+
+  function refresh() {
+    localStorage.setItem('mh_books', JSON.stringify([...sel]));
+    $('#count').textContent = sel.size ? `${sel.size} book${sel.size > 1 ? 's' : ''} selected` : 'No books selected';
+    $('#go').disabled = !sel.size;
+  }
+
+  (async () => {
+    try {
+      const books = await api('/books');
+      const valid = new Set(books.map((b) => b.id));
+      sel = new Set([...sel].filter((id) => valid.has(id)));
+      $('#books').innerHTML = !books.length ? '<div class="empty">No books yet. Ask your teacher to add some.</div>' : books.map((b) => `
+        <label class="book">
+          <input type="checkbox" value="${b.id}" ${sel.has(b.id) ? 'checked' : ''}>
+          <span class="face">
+            <h3>${esc(b.title)}</h3>
+            <span class="chip">${esc(b.grade)}</span>
+            <p class="muted" style="margin:10px 0 6px">${esc(b.description)}</p>
+            <span class="muted">${b.lessons} lessons · ${b.questions} questions</span><br>
+            <a href="/skills.html?book=${b.id}" onclick="event.stopPropagation()">Open lessons</a>
+          </span>
+          <span class="tick" aria-hidden="true"></span>
+        </label>`).join('');
+      document.querySelectorAll('.book input').forEach((cb) => {
+        cb.onchange = () => { cb.checked ? sel.add(Number(cb.value)) : sel.delete(Number(cb.value)); refresh(); };
+      });
+      refresh();
+    } catch (e) { showMsg($('#msg'), e.message); }
+  })();
+
+  $('#go').onclick = () => { location.href = '/tests.html'; };
+</script>
+</body>
+</html>

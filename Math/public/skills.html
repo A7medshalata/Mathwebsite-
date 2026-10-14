@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homework skills · MathHub</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="wrap" id="main"><div id="msg"></div></main>
+<script src="/app.js"></script>
+<script>
+  startPage('student', 'skills.html');
+  const params = new URLSearchParams(location.search);
+  const main = $('#main');
+
+  const lessonRow = (l) => {
+    const acc = l.attempts ? Math.round((100 * l.correct) / l.attempts) : null;
+    return `<tr>
+      <td><a href="/skills.html?lesson=${l.id}">${esc(l.title)}</a></td>
+      <td>${l.questions}</td>
+      <td style="min-width:140px">${acc === null ? '<span class="muted">Not started</span>' : barHtml(acc)}</td>
+      <td>${acc === null ? '' : `<span class="chip ${acc >= 75 ? 'good' : acc >= 50 ? 'warn' : 'bad'}">${acc}%</span>`}</td>
+      <td><a class="btn small" href="/skills.html?lesson=${l.id}">${l.attempts ? 'Practise again' : 'Start'}</a></td>
+    </tr>`;
+  };
+
+  async function showLesson(id) {
+    const l = await api('/lessons/' + id);
+    document.title = l.title + ' · MathHub';
+    main.innerHTML = `
+      <p><a href="/skills.html">← All lessons</a></p>
+      <h1>${esc(l.title)}</h1>
+      <p class="muted">${esc(l.book)}</p>
+      <div class="lesson-body">${l.content}</div>
+      <h2>Practise this skill</h2>
+      <div id="quiz"></div>`;
+    if (!l.questions.length) $('#quiz').innerHTML = '<div class="empty">No practice questions for this lesson yet.</div>';
+    else renderQuiz($('#quiz'), l.questions, 'skill');
+  }
+
+  async function showBooks() {
+    const books = await api('/books');
+    const only = params.get('book') ? books.filter((b) => b.id === Number(params.get('book'))) : books;
+    const parts = [];
+    for (const b of only) {
+      const lessons = await api(`/books/${b.id}/lessons`);
+      parts.push(`<section class="panel"><h2>${esc(b.title)} <span class="chip">${esc(b.grade)}</span></h2>
+        <div class="tablewrap"><table><thead><tr><th>Lesson</th><th>Questions</th><th>Progress</th><th>Score</th><th></th></tr></thead>
+        <tbody>${lessons.map(lessonRow).join('')}</tbody></table></div></section>`);
+    }
+    main.innerHTML = `<h1>Homework <span class="hl">skills</span></h1>
+      <p class="lead">Read a lesson, then practise it. Every answer is tracked so we can spot the lessons you find hard.</p>
+      ${parts.join('') || '<div class="empty">No lessons yet.</div>'}`;
+  }
+
+  (params.get('lesson') ? showLesson(params.get('lesson')) : showBooks()).catch((e) => {
+    main.innerHTML = '<div id="msg"></div>'; showMsg($('#msg'), e.message);
+  });
+</script>
+</body>
+</html>
